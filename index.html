@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>表情输入法 · 稳定版</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  padding: 30px;
+}
+textarea {
+  width: 100%;
+  height: 120px;
+  font-size: 18px;
+}
+.output {
+  margin-top: 40px;
+  font-size: 56px;
+  border-top: 2px solid #ccc;
+  padding-top: 40px;
+  line-height: 3.2;
+}
+.icon {
+  height: 1.2em;
+  vertical-align: -0.2em;
+}
+</style>
+</head>
+
+<body>
+
+<h2>输入语言 · 输出表情包（符号或图片）</h2>
+
+<textarea id="input" placeholder="狗回家 the dog returns home"></textarea>
+<div class="output" id="output"></div>
+
+<script>
+/* =========================
+   ① 词库（可无限扩）
+   ========================= */
+const lexicon = [
+{
+    id: "person",
+    img: "我.png",
+    words: ["我", "自己", "本人"]
+  },
+/* ========= 语法 ========= */
+{ id: "远", img: "远.png", words: ["远","远处","远方","lejos","distancia","far","far away"] },
+{ id: "对", emoji: "√", words: ["对","正确","sí","correcto","right","correct"] },
+{ id: "不是", emoji: "≠", words: ["不是","no","no es","not"] },
+{ id: "错", emoji: "✗", words: ["不是","错","错误","否","不","error","incorrecto","mal","wrong","incorrect","no"] },
+{ id: "风险", emoji: "⚠️", words: ["风险","警告","riesgo","advertencia","risk","warning"] },
+{ id: "近", symbols: ["✗", { type: "img", value: "远.png" }], words: ["近","附近","cerca","próximo","near","close"] },
+{ id: "好", emoji: "👍", words: ["好","好的","棒","可以","满意","赞赏","夸","bueno","bien","genial","vale","good","nice","great","ok"] },
+{ id: "坏", emoji: "👎", words: ["坏","差","糟","糟糕","骂","malo","mal","terrible","bad","awful"] },
+{ id: "下降", emoji: "📉", words: ["下降","下跌","减少","降低","变差","下滑","衰退","bajar","caer","descenso","disminuir","down","decline","decrease"] },
+{ id: "上升", emoji: "📈", words: ["上升","上涨","增长","提高","增加","变好","回升","subir","aumentar","crecer","rise","increase","go up"] },
+{ id: "增加", emoji: "➕", words: ["增加","加","新增","变多","añadir","aumentar","sumar","add","increase","more"] }, 
+{ id: "减少", emoji: "➖", words: ["减少","减","变少","reducir","disminuir","menos","reduce","decrease","less"] },
+{ id: "播放", emoji: "▶️", words: ["播放","开始","运行","启动","reproducir","iniciar","empezar","play","start","run"] },
+{ id: "暂停", emoji: "⏸️", words: ["暂停","停一下","暂停一下","暂时停止","pausar","detener","pause","stop","hold"] },
+{ id: "小", img: "一点.png", words: ["小","少","pequeño","poco","small","little"] },
+{ id: "大", img: "6点.png", words: ["大","多","grande","mucho","big","large"] },
+{ id: "快", emoji: "🐇", words: ["快","很快","rápido","veloz","fast","quick"] },
+{ id: "慢", emoji: "🐢", words: ["慢","很慢","lento","despacio","slow"] },
+{ id: "the", empty: true, words: ["the"] },
+{ id: "问句", emoji: "？", words: ["吗"] },
+{ id: "el",emoji: "", words: ["el","an","a","el","the","un"] },
+
+
+
+/* ========= 逻辑层 ========= */
+
+{ id: "是", emoji: "＝", words: ["是","等于","ser","soy","eres","es","somos","son","era","eras","eran","fue","fui","fueron","sea","sean","estar","estoy","estás","está","estamos","están","estaba","estaban","estuvo","estuvieron","be","am","is","are","was","were","being","been","equals","equal"] },
+{ id: "and", emoji: "＋", words: ["和","并且","同时","and","y"] },
+{ id: "oppose", emoji: "⚔️", words: ["对立","冲突","对抗","oppose","conflict","oponer"] },
+{ id: "contain", emoji: "{", words: ["属于","包扩","包含","在其中","in","inside","belong","pertenecer"] },
+{ id: "contain", emoji: "}", words: ["属于","in","inside","belong","pertenecer"] },
+{ id: "cause_seed", emoji: "🌱", words: ["因为","种子","原因","起因","因","cause","reason","because","porque","semilla","seed"] },
+{ id: "effect_fruit", emoji: "🍎", words: ["所以","结果","后果","果","effect","result","therefore","por eso","fruta","resultado"] },
+{ id: "imitate", emoji: "≈", words: ["像","模仿","仿佛","约等于","imitar","parece","imitar a","imitate","copy"] },
+{ id: "小于", symbol: "<", words: ["小于", "少于", "less than", "menor que", "<"] },
+{ id: "大于", symbol: ">", words: ["大于", "大于于", "greater than", "more than", "mayor que", "más que", ">"] },
+
+
+/* ========= 新知 ========= */
+
+{ id: "俄罗斯", img: "俄罗斯.png", words: ["俄罗斯","俄罗斯的","Rusia","ruso","rusa","Russia","Russian"] },
+{ id: "秘鲁", img: "秘鲁.png", words: ["秘鲁","秘鲁的","Perú","peruano","peruana","Peru"] },
+{ id: "中国", img: "中国.png", words: ["中国","中国的","China","chino","china","Chinese"] },
+
+
+
+
+
+/* ========= 科学 ========= */
+
+{ id: "基因", img: "基因.png", words: ["基因","gene","gen","天性","instinct","instinto"] },
+{ id: "chromosome", img: "染色体.png", words: ["染色体", "cromosoma","chromosome"] },
+{ id: "cell", img: "cell.png", words: ["细胞","cell","célula"] },
+{ id: "membrane", img: "cell_membrane.png", words: ["细胞膜","膜","membrane","membrana"] },
+{ id: "phospholipid", img: "phospholipid.png", words: ["磷脂","phospholipid","fosfolípido"] },
+{ id: "phosphatidylglycerol", img: "phosphatidylglycerol.png", words: ["磷脂甘油","phosphatidylglycerol","fosfatidilglicerol"] },
+{ id: "bilayer", img: "lipid_bilayer.png", words: ["脂双层","双层膜","lipid bilayer","bicapa lipídica"] },
+{ id: "protein", img: "protein.png", words: ["蛋白质","protein","proteína"] },
+{ id: "enzyme", img: "enzyme.png", words: ["酶","enzyme","enzima"] },
+{ id: "receptor", img: "receptor.png", words: ["受体","receptor"] },
+{ id: "channel", img: "ion channel.png", words: ["离子通道","通道蛋白","ion channel","canal iónico"] },
+{ id: "catalysis", img: "catalysis.png", words: ["催化","催化作用","catalyze","catalysis","catálisis"] },
+{ id: "底物", img: "substrate.png", words: ["底物","substrate","sustrato"] },
+{ id: "氨基", img: "氨基.png", words: ["氨基","amino","amino group","-nh2"] },
+{ id: "质子化氨基", img: "nh3+.png", words: ["nh3+","NH3+","质子化氨基","protonated amino"] },
+
+
+
+
+/* ========= 数字及排序========= */
+{ id: "1st", emoji: "1°", words: ["第一","第一个","1st","first","primero"] },
+{ id: "2nd", symbol: "2°", words: ["第二","第二个","2nd","second","segundo"] },
+{ id: "3rd", symbol: "3°", words: ["第三","第三个","3rd","third","tercero"] },
+{ id: "4th", symbol: "4°", words: ["第四","第四个","4th","fourth","cuarto"] },
+{ id: "5th", symbol: "5°", words: ["第五","第五个","5th","fifth","quinto"] },
+{ id: "6th", symbol: "6°", words: ["第六","第六个","6th","sixth","sexto"] },
+{ id: "7th", symbol: "7°", words: ["第七","第七个","7th","seventh","séptimo"] },
+{ id: "8th", symbol: "8°", words: ["第八","第八个","8th","eighth","octavo"] },
+{ id: "9th", symbol: "9°", words: ["第九","第九个","9th","ninth","noveno"] },
+{ id: "10th", symbol: "10°", words: ["第十","第十个","10th","tenth","décimo"] },
+{ id: "1", symbol: "1", words: ["一","一个","1","uno","one"] },
+{ id: "2", symbol: "2", words: ["二","两个","2","dos","two"] },
+{ id: "3", symbol: "3", words: ["三","3","tres","three"] },
+{ id: "4", symbol: "4", words: ["四","4","cuatro","four"] },
+{ id: "5", symbol: "5", words: ["五","5","cinco","five"] },
+{ id: "6", symbol: "6", words: ["六","6","seis","six"] },
+{ id: "7", symbol: "7", words: ["七","7","siete","seven"] },
+{ id: "8", symbol: "8", words: ["八","8","ocho","eight"] },
+{ id: "9", symbol: "9", words: ["九","9","nueve","nine"] },
+{ id: "10", symbol: "10", words: ["十","10","diez","ten"] },
+{ id: "11", symbol: "11", words: ["十一","11","once","eleven"] },
+{ id: "12", symbol: "12", words: ["十二","12","doce","twelve"] },
+{ id: "13", symbol: "13", words: ["十三","13","trece","thirteen"] },
+{ id: "14", symbol: "14", words: ["十四","14","catorce","fourteen"] },
+{ id: "15", symbol: "15", words: ["十五","15","quince","fifteen"] },
+{ id: "16", symbol: "16", words: ["十六","16","dieciséis","sixteen"] },
+{ id: "17", symbol: "17", words: ["十七","17","diecisiete","seventeen"] },
+{ id: "18", symbol: "18", words: ["十八","18","dieciocho","eighteen"] },
+{ id: "19", symbol: "19", words: ["十九","19","diecinueve","nineteen"] },
+{ id: "20", symbol: "20", words: ["二十","20","veinte","twenty"] },
+
+
+/* ========= 颜色 ========= */
+{ id: "white", emoji: "⬜", words: ["白","白色","white","blanco"] },
+{ id: "black", emoji: "⬛", words: ["黑","黑色","black","negro"] },
+{ id: "red", emoji: "🟥", words: ["红","红色","red","rojo"] },
+{ id: "orange", emoji: "🟧", words: ["橙","橙色","橘色","orange","naranja"] },
+{ id: "yellow", emoji: "🟨", words: ["黄","黄色","yellow","amarillo"] },
+{ id: "green", emoji: "🟩", words: ["绿","绿色","green","verde"] },
+{ id: "blue", emoji: "🟦", words: ["蓝","蓝色","blue","azul"] },
+{ id: "purple", emoji: "🟪", words: ["紫","紫色","purple","violet","morado"] },
+{ id: "green_fresh", emoji: "🟩🌱", words: ["嫩绿","新叶","fresh green","verde joven"] },
+{ id: "green_deep", emoji: "🟩🌲", words: ["深绿","林绿","deep green","verde profundo"] },
+{ id: "green_wet", emoji: "🟩💧", words: ["湿绿","雨林绿","wet green","verde húmedo"] },
+{ id: "green_dry", emoji: "🟩🍂", words: ["枯绿","干绿","dry green","verde seco"] },
+{ id: "white_snow", emoji: "⬜❄️", words: ["雪白","新雪","powder snow","nieve fresca"] },
+{ id: "white_ice", emoji: "⬜🧊", words: ["冰白","冰色","ice white","blanco hielo"] },
+
+/* ========= 主要交通标识 ========= */
+{ id: "traffic_stop", emoji: "🛑", words: ["停止", "stop","别",  "停","don't", "alto", "parar"] },
+{ id: "traffic_go", emoji: "🟢", words: ["通行","可以", "go", "前进", "pasar", "avanzar"] },
+{ id: "traffic_wait", emoji: "🟡", words: ["等待", "wait", "等待", "esperar", "preparar"] },
+{ id: "traffic_no_entry", emoji: "🚫", words: ["禁止进入", "no entry", "不准进", "prohibido entrar", "entrada prohibida"] },
+{ id: "traffic_no_parking", emoji: "🚯", words: ["禁止停车", "no parking", "不准停", "prohibido estacionar", "no aparcar"] },
+{ id: "traffic_parking", emoji: "🅿️", words: ["停车", "parking", "泊车", "estacionamiento", "aparcamiento"] },
+{ id: "traffic_pedestrian", emoji: "🚸", words: ["行人", "pedestrian", "注意行人", "peatón", "cruce peatonal"] },
+{ id: "traffic_school", emoji: "🏫", words: ["学校", "school", "校区", "escuela", "zona escolar"] },
+{ id: "traffic_hospital", emoji: "🏥", words: ["医院", "hospital", "医疗", "hospital", "centro médico"] },
+{ id: "traffic_gas", emoji: "⛽", words: ["加油站", "gas station", "燃油", "gasolinera", "estación de servicio"] },
+{ id: "traffic_airport", emoji: "✈️", words: ["机场", "airport", "航空", "aeropuerto", "terminal aérea"] },
+{ id: "traffic_railroad", emoji: "🚂", words: ["铁路", "railroad", "火车道", "ferrocarril", "vía férrea"] },
+{ id: "traffic_construction", emoji: "🚧", words: ["施工", "construction", "道路施工", "construcción", "obras viales"] },
+{ id: "traffic_police", emoji: "👮", words: ["警察", "police", "交警", "policía", "tránsito"] },
+
+
+/* ========= 动物及引申 ========= */
+{ id: "dog", emoji: "🐕", words: ["狗", "狗狗", "陪伴", "忠诚", "朋友", "perro", "acompañar", "leal", "dog", "companion", "loyal"] },
+{ id: "rabbit", emoji: "🐇", words: ["兔子", "快", "迅速", "敏捷", "conejo", "rápido", "rabbit", "fast", "quick"] },
+{ id: "turtle", emoji: "🐢", words: ["乌龟", "慢", "缓慢", "拖延", "tortuga", "lento", "turtle", "slow"] },
+{ id: "lion", emoji: "🦁", words: ["狮子", "力量", "权威", "王者", "león", "poder", "lion", "king", "power"] },
+{ id: "fox", emoji: "🦊", words: ["狐狸", "聪明", "狡猾", "诡计", "zorro", "astuto", "fox", "clever", "cunning"] },
+{ id: "wolf", emoji: "🐺", words: ["狼", "孤独", "野性", "群体", "lobo", "solitario", "wolf", "wild", "pack"] },
+{ id: "pig", emoji: "🐷", words: ["猪", "懒", "吃", "满足", "cerdo", "perezoso", "pig", "lazy"] },
+{ id: "bee", emoji: "🐝", words: ["蜜蜂", "忙碌", "合作", "勤奋", "abeja", "trabajador", "bee", "busy", "teamwork"] },
+{ id: "bird", emoji: "🐦", words: ["鸟", "自由", "飞", "远方", "pájaro", "libertad", "bird", "freedom", "fly"] },
+
+
+/* ========= 动物 无引申 ========= */
+{ id: "cat", emoji: "🐈", words: ["猫", "gato", "cat"] },
+{ id: "horse", emoji: "🐎", words: ["马", "caballo", "horse"] },
+{ id: "tiger", emoji: "🐯", words: ["老虎", "tigre", "tiger"] },
+{ id: "sheep", emoji: "🐑", words: ["羊", "oveja", "sheep"] },
+{ id: "monkey", emoji: "🐒", words: ["猴子", "mono", "monkey"] },
+{ id: "cow", emoji: "🐮", words: ["牛", "vaca", "cow"] },
+{ id: "ant", emoji: "🐜", words: ["蚂蚁", "hormiga", "ant"] },
+{ id: "sloth", emoji: "🦥", words: ["树懒", "perezoso", "sloth"] },
+{ id: "fish", emoji: "🐟", words: ["鱼", "pez", "fish"] },
+{ id: "shark", emoji: "🦈", words: ["鲨鱼", "tiburón", "shark"] },
+{ id: "whale", emoji: "🐳", words: ["鲸", "ballena", "whale"] },
+{ id: "owl", emoji: "🦉", words: ["猫头鹰", "búho", "owl"] },
+
+
+/* ========= 人与身份 ========= */
+
+{ id: "you", img: "你.png", words: ["你","你们","tu","usted","ustedes","you"] },
+{ id: "him", img: "他.png", words: ["他","他们","él","ellos","him","he","them"] },
+{ id: "man", emoji: "👨", words: ["男","男人","hombre","man"] },
+{ id: "woman", emoji: "👩", words: ["女","女人","mujer","woman"] },
+{ id: "child", emoji: "👶", words: ["孩子","小孩","niño","niña","child","kid"] },
+{ id: "mother", emoji: "👩‍👧", words: ["母亲","妈妈","madre","mamá","mother","mom"] },
+{ id: "father", emoji: "👨‍👦", words: ["父亲","爸爸","padre","papá","father","dad"] },
+{ id: "friend", emoji: "🤝", words: ["朋友","伙伴","amigo","amiga","friend"] },
+
+
+/* ========= 人体部位 ========= */
+
+{ id: "hand", emoji: "✋", words: ["手","手掌","手部","mano","hand","hands"] },
+{ id: "finger", emoji: "☝️", words: ["手指","指","dedo","finger"] },
+{ id: "mouth", emoji: "👄", words: ["口","嘴","嘴巴","boca","mouth"] },
+{ id: "teeth", emoji: "🦷", words: ["牙","牙齿","齿","diente","teeth"] },
+{ id: "eye", emoji: "👁️", words: ["眼","眼睛","ojo","eye","eyes"] },
+{ id: "ear", emoji: "👂", words: ["耳","耳朵","oído","oreja","ear"] },
+{ id: "head", emoji: "🧠", words: ["头","头部","cabeza","head"] },
+{ id: "heart", emoji: "❤️", words: ["心","心脏","corazón","heart"] },
+{ id: "foot", emoji: "🦶", words: ["脚","足","pie","foot","feet"] },
+
+
+
+/* ========= 空间 / 场所 ========= */
+{ id: "home", emoji: "🏠", words: ["家","房子","住处","casa","hogar","home","house"] },
+{ id: "room", emoji: "🛏️", words: ["房间","habitación","cuarto","room"] },
+{ id: "door", emoji: "🚪", words: ["门","puerta","door"] },
+{ id: "window", emoji: "🪟", words: ["窗","窗户","ventana","window"] },
+{ id: "road", emoji: "🛣️", words: ["路","道路","camino","carretera","road"] },
+{ id: "city", emoji: "🏙️", words: ["城市","ciudad","city"] },
+{ id: "village", emoji: "🏡", words: ["乡村","村庄","pueblo","aldea","village"] },
+{ id: "station", emoji: "🚉", words: ["车站","estación","station"] },
+{ id: "school", emoji: "🏫", words: ["学校","escuela","colegio","school"] },
+{ id: "hospital", emoji: "🏥", words: ["医院","hospital","hospital"] },
+
+
+/* ========= 行为 / 动作 ========= */
+{ id: "walk", emoji: "🚶", words: ["走","步行","caminar","andar","walk"] },
+{ id: "run", emoji: "🏃", words: ["跑","correr","run"] },
+{ id: "stop", emoji: "🛑", words: ["停下","停止","parar","detener","stop"] },
+{ id: "leave", emoji: "➡️", words: ["离开","salir","irse","leave"] },
+{ id: "return", emoji: "↩️", words: ["回来","回","返回","volver","regresar","return"] },
+{ id: "dizzy", emoji: "😵", words: ["晕", "头晕", "眩晕", "dizzy", "vertigo"] },
+{ id: "vomit", emoji: "🤮", words: ["吐", "呕吐", "恶心", "vomit", "nausea", "throw up"] },
+{ id: "enter", emoji: "🚪➡️", words: ["进入","entrar","enter"] },
+{ id: "sit", emoji: "🪑", words: ["坐下","sentarse","sit"] },
+{ id: "stand", emoji: "🧍", words: ["站立","estar de pie","stand"] },
+{ id: "look", emoji: "👀", words: ["看","望","mirar","ver","look","see"] },
+{ id: "listen", emoji: "👂", words: ["听","escuchar","oír","listen"] },
+{ id: "cycle", emoji: "🔁", words: ["循环","回路","往复","cycle","loop","ciclo"] },
+{ id: "separate", emoji: "✂️", words: ["剪刀","分离","剪开","断裂","separate","split","tijera","cut","separar"] },
+{ id: "reversible", emoji: "⇌", words: ["可逆反应","双向反应","相互转化","reversible","two-way","bidirectional","reversible"] },
+{ id: "balance", emoji: "⚖️", words: ["平衡","均衡","对等","balance","equilibrium","equilibrio"] },
+{ id: "pull_stubborn", img: "拉扯.png", words: ["拉扯", "犟", "拧着", "不肯顺", "别拽我", "tirar", "jalonear", "terco", "empecinado", "stubborn", "pulling", "won't budge"] },
+{ id: "下载", img: "下载.png", words: ["下载", "download", "descargar"] },
+{ id: "上传", img: "上传.png", words: ["上传", "upload", "subir"] },
+{ id: "删除", img: "删除.png", words: ["删除", "delete", "eliminar"] },
+{ id: "写", img: "写.png", words: ["写", "write", "escribir"] },
+{ id: "读", img: "读.png", words: ["读", "read", "leer"] },
+{ id: "站", img: "站.png", words: ["站", "stand", "estar de pie"] },
+{ id: "拿", img: "拿.png", words: ["拿", "take", "tomar"] },
+{ id: "坐", img: "坐.png", words: ["坐", "sit", "sentarse"] },
+{ id: "eat", emoji: "🍽️", words: ["吃","吃饭","comer","eat"] },
+{ id: "drink", emoji: "💧", words: ["喝","喝水","beber","drink"] },
+{ id: "sleep", emoji: "😴", words: ["睡","睡觉","dormir","sleep"] },
+{ id: "wake", emoji: "🌅", words: ["醒","醒来","despertar","wake"] },
+{ id: "work", emoji: "💼", words: ["工作","上班","trabajar","work"] },
+{ id: "rest", emoji: "🛌", words: ["休息","descansar","rest"] },
+{ id: "wash", emoji: "🚿", words: ["洗澡","lavar","wash"] },
+{ id: "cook", emoji: "🍳", words: ["做饭","cocinar","cook"] },
+{ id: "study", emoji: "📚", words: ["学习","estudiar","study"] },
+{ id: "read", emoji: "📖", words: ["读书","leer","read"] },
+{ id: "左转", img: "左转.png", words: ["左转", "left turn", "a la izquierda"] },
+{ id: "右转", img: "右转.png", words: ["右转", "right turn", "a la derecha"] },
+{ id: "说", emoji: "：", words: ["说","讲","talk","say","decir","hablar",] },
+
+
+/* ========= 名词 ========= */
+
+{ id: "邮箱", img: "邮箱.png", words: ["邮箱", "email", "correo"] },
+{ id: "密码", img: "密码.png", words: ["密码", "password", "contraseña"] },
+{ id: "电线", img: "电线.png", words: ["电线", "wire", "cable"] },
+{ id: "插头", img: "插头.png", words: ["插头", "plug", "enchufe"] },
+{ id: "插排", img: "插排.png", words: ["插排", "power strip", "regleta"] },
+{ id: "数据线", img: "数据线.png", words: ["数据线", "data cable", "cable de datos"] },
+{ id: "插座", img: "插座.png", words: ["插座", "socket", "toma"] },
+{ id: "开关", img: "开关.png", words: ["开关", "switch", "interruptor"] },
+{ id: "电池", img: "电池.png", words: ["电池", "battery", "batería"] },
+{ id: "充电宝", img: "充电宝.png", words: ["充电宝", "power bank", "batería externa"] },
+{ id: "互联网", img: "互联网.png", words: ["互联网", "internet", "internet"] },
+{ id: "无线网", img: "无线网.png", words: ["无线网", "WiFi", "wifi"] },
+{ id: "信号", img: "信号.png", words: ["信号", "signal", "señal"] },
+{ id: "热点", img: "热点.png", words: ["热点", "hotspot", "punto de acceso"] },
+{ id: "蓝牙", img: "蓝牙.png", words: ["蓝牙", "bluetooth", "bluetooth"] },
+{ id: "上传", img: "上传.png", words: ["上传", "upload", "subir"] },
+{ id: "定位", img: "定位.png", words: ["定位", "location", "ubicación"] },
+{ id: "食盐", img: "食盐.png", words: ["食盐", "salt", "sal"] },
+{ id: "花生油", img: "花生油.png", words: ["花生油", "peanut oil", "aceite de maní"] },
+{ id: "酱油", img: "酱油.png", words: ["酱油", "soy sauce", "salsa de soja"] },
+{ id: "番茄酱", img: "番茄酱.png", words: ["番茄酱", "ketchup", "kétchup"] },
+{ id: "生姜", img: "生姜.png", words: ["生姜", "ginger", "jengibre"] },
+{ id: "香葱", img: "香葱.png", words: ["香葱", "scallion", "cebollín"] },
+{ id: "大葱", img: "大葱.png", words: ["大葱", "leek", "puerro"] },
+{ id: "大蒜", img: "大蒜.png", words: ["大蒜", "garlic", "ajo"] },
+{ id: "辣椒", img: "辣椒.png", words: ["辣椒", "chili", "chile"] },
+{ id: "八角", img: "八角.png", words: ["八角", "star anise", "anís estrellado"] },
+{ id: "桂皮", img: "桂皮.png", words: ["桂皮", "cinnamon", "canela"] },
+{ id: "花椒", img: "花椒.png", words: ["花椒", "Sichuan pepper", "pimienta de Sichuan"] },
+{ id: "油条", img: "油条.png", words: ["油条", "fried dough", "masa frita"] },
+{ id: "包子", img: "包子.png", words: ["包子", "steamed bun", "bollo al vapor"] },
+{ id: "饺子", img: "饺子.png", words: ["饺子", "dumpling", "empanadilla"] },
+{ id: "馄饨", img: "馄饨.png", words: ["馄饨", "wonton", "wonton"] },
+{ id: "饼", img: "饼.png", words: ["饼", "pancake", "torta"] },
+{ id: "面条", img: "面条.png", words: ["面条", "noodles", "fideos"] },
+{ id: "粽子", img: "粽子.png", words: ["粽子", "zongzi", "zongzi"] },
+{ id: "钢丝球", img: "钢丝球.png", words: ["钢丝球", "steel scrubber", "estropajo metálico"] },
+{ id: "海绵", img: "海绵.png", words: ["海绵", "sponge", "esponja"] },
+{ id: "扫把", img: "扫把.png", words: ["扫把", "broom", "escoba"] },
+{ id: "鸡毛掸子", img: "鸡毛掸子.png", words: ["鸡毛掸子", "feather duster", "plumero"] },
+{ id: "抖音", img: "抖音.png", words: ["抖音", "TikTok", "TikTok"] },
+{ id: "脸书", img: "脸书.png", words: ["脸书", "Facebook", "Facebook"] },
+{ id: "微信", img: "微信.png", words: ["微信", "WeChat", "WeChat"] },
+{ id: "油管", img: "油管.png", words: ["油管", "YouTube", "YouTube"] },
+{ id: "电报", img: "电报.png", words: ["电报", "Telegram", "Telegram"] },
+{ id: "老师", img: "老师.png", words: ["老师", "teacher", "profesor"] },
+{ id: "医生", img: "医生.png", words: ["医生", "doctor", "médico"] },
+{ id: "护士", img: "护士.png", words: ["护士", "nurse", "enfermera"] },
+{ id: "律师", img: "律师.png", words: ["律师", "lawyer", "abogado"] },
+{ id: "厨师", img: "厨师.png", words: ["厨师", "chef", "cocinero"] },
+{ id: "主持人", img: "主持人.png", words: ["主持人", "host", "presentador"] },
+{ id: "演员", img: "演员.png", words: ["演员", "actor", "actor"] },
+{ id: "歌手", img: "歌手.png", words: ["歌手", "singer", "cantante"] },
+{ id: "自行车", img: "自行车.png", words: ["自行车", "bicycle", "bicicleta"] },
+{ id: "摩托车", img: "摩托车.png", words: ["摩托车", "motorcycle", "motocicleta"] },
+{ id: "汽车", img: "汽车.png", words: ["汽车", "car", "coche"] },
+{ id: "火车", img: "火车.png", words: ["火车", "train", "tren"] },
+{ id: "公共汽车", img: "公共汽车.png", words: ["公共汽车", "bus", "autobús"] },
+{ id: "飞机", img: "飞机.png", words: ["飞机", "airplane", "avión"] },
+{ id: "轮船", img: "轮船.png", words: ["轮船", "ship", "barco"] },
+{ id: "高铁", img: "高铁.png", words: ["高铁", "high-speed rail", "tren bala"] },
+{ id: "地铁", img: "地铁.png", words: ["地铁", "subway", "metro"] },
+{ id: "拖把", img: "拖把.png", words: ["拖把", "mop", "trapeador"] },
+{ id: "垃圾铲", img: "垃圾铲.png", words: ["垃圾铲", "dustpan", "recogedor"] },
+{ id: "垃圾桶", img: "垃圾桶.png", words: ["垃圾桶", "trash can", "basurero"] },
+{ id: "垃圾袋", img: "垃圾袋.png", words: ["垃圾袋", "trash bag", "bolsa de basura"] },
+{ id: "餐桌", img: "餐桌.png", words: ["餐桌", "dining table", "mesa"] },
+{ id: "书桌", img: "书桌.png", words: ["书桌", "desk", "escritorio"] },
+{ id: "茶几", img: "茶几.png", words: ["茶几", "coffee table", "mesa de centro"] },
+{ id: "椅子", img: "椅子.png", words: ["椅子", "chair", "silla"] },
+{ id: "凳子", img: "凳子.png", words: ["凳子", "stool", "taburete"] },
+{ id: "沙发", img: "沙发.png", words: ["沙发", "sofa", "sofá"] },
+{ id: "屏风", img: "屏风.png", words: ["屏风", "screen", "biombo"] },
+{ id: "电视柜", img: "电视柜.png", words: ["电视柜", "TV stand", "mueble de TV"] },
+{ id: "酒柜", img: "酒柜.png", words: ["酒柜", "wine cabinet", "vinoteca"] },
+{ id: "冰箱", img: "冰箱.png", words: ["冰箱", "refrigerator", "refrigerador"] },
+{ id: "微波炉", img: "微波炉.png", words: ["微波炉", "microwave", "microondas"] },
+{ id: "烤箱", img: "烤箱.png", words: ["烤箱", "oven", "horno"] },
+{ id: "空调", img: "空调.png", words: ["空调", "air conditioner", "aire acondicionado"] },
+{ id: "电视机", img: "电视机.png", words: ["电视机", "television", "televisor"] },
+{ id: "风扇", img: "风扇.png", words: ["风扇", "fan", "ventilador"] },
+{ id: "热水器", img: "热水器.png", words: ["热水器", "water heater", "calentador"] },
+{ id: "吸尘器", img: "吸尘器.png", words: ["吸尘器", "vacuum cleaner", "aspiradora"] },
+{ id: "吹风机", img: "吹风机.png", words: ["吹风机", "hair dryer", "secador"] },
+{ id: "锅铲", img: "锅铲.png", words: ["锅铲", "spatula", "espátula"] },
+{ id: "菜刀", img: "菜刀.png", words: ["菜刀", "cleaver", "cuchillo"] },
+{ id: "砧板", img: "砧板.png", words: ["砧板", "cutting board", "tabla de cortar"] },
+{ id: "煤气灶", img: "煤气灶.png", words: ["煤气灶", "gas stove", "estufa de gas"] },
+{ id: "炒锅", img: "炒锅.png", words: ["炒锅", "wok", "wok"] },
+{ id: "汤锅", img: "汤锅.png", words: ["汤锅", "soup pot", "olla"] },
+{ id: "电饭煲", img: "电饭煲.png", words: ["电饭煲", "rice cooker", "arrocera"] },
+{ id: "高压锅", img: "高压锅.png", words: ["高压锅", "pressure cooker", "olla a presión"] },
+{ id: "搅拌器", img: "搅拌器.png", words: ["搅拌器", "blender", "licuadora"] },
+{ id: "吸管", img: "吸管.png", words: ["吸管", "straw", "pajilla"] },
+{ id: "牙签", img: "牙签.png", words: ["牙签", "toothpick", "palillo"] },
+{ id: "碗", img: "碗.png", words: ["碗", "bowl", "cuenco"] },
+{ id: "筷子", img: "筷子.png", words: ["筷子", "chopsticks", "palillos"] },
+{ id: "叉子", img: "叉子.png", words: ["叉子", "fork", "tenedor"] },
+{ id: "刀子", img: "刀子.png", words: ["刀子", "knife", "cuchillo"] },
+{ id: "饭勺", img: "饭勺.png", words: ["饭勺", "rice spoon", "cuchara"] },
+{ id: "汤勺", img: "汤勺.png", words: ["汤勺", "ladle", "cucharón"] },
+{ id: "漏勺", img: "漏勺.png", words: ["漏勺", "skimmer", "espumadera"] },
+{ id: "扳手", img: "扳手.png", words: ["扳手", "wrench", "llave"] },
+{ id: "螺丝刀", img: "螺丝刀.png", words: ["螺丝刀", "screwdriver", "destornillador"] },
+{ id: "螺母", img: "螺母.png", words: ["螺母", "nut", "tuerca"] },
+{ id: "电钻", img: "电钻.png", words: ["电钻", "drill", "taladro"] },
+{ id: "卡尺", img: "卡尺.png", words: ["卡尺", "caliper", "calibrador"] },
+{ id: "卷尺", img: "卷尺.png", words: ["卷尺", "tape measure", "cinta métrica"] },
+{ id: "千斤顶", img: "千斤顶.png", words: ["千斤顶", "jack", "gato"] },
+{ id: "钳子", img: "钳子.png", words: ["钳子", "pliers", "alicates"] },
+{ id: "斧头", img: "斧头.png", words: ["斧头", "axe", "hacha"] },
+{ id: "梯子", img: "梯子.png", words: ["梯子", "ladder", "escalera"] },
+{ id: "镊子", img: "镊子.png", words: ["镊子", "tweezers", "pinzas"] },
+{ id: "夹子", img: "夹子.png", words: ["夹子", "clip", "pinza"] },
+{ id: "钩子", img: "钩子.png", words: ["钩子", "hook", "gancho"] },
+{ id: "绳子", img: "绳子.png", words: ["绳子", "rope", "cuerda"] },
+{ id: "轮椅", img: "轮椅.png", words: ["轮椅", "wheelchair", "silla de ruedas"] },
+{ id: "拐杖", img: "拐杖.png", words: ["拐杖", "cane", "bastón"] },
+{ id: "棉签", img: "棉签.png", words: ["棉签", "cotton swab", "hisopo"] },
+{ id: "手套", img: "手套.png", words: ["手套", "gloves", "guantes"] },
+{ id: "口罩", img: "口罩.png", words: ["口罩", "mask", "mascarilla"] },
+{ id: "救护车", img: "救护车.png", words: ["救护车", "ambulance", "ambulancia"] },
+{ id: "担架", img: "担架.png", words: ["担架", "stretcher", "camilla"] },
+{ id: "急救箱", img: "急救箱.png", words: ["急救箱", "first aid kit", "botiquín"] },
+{ id: "血袋", img: "血袋.png", words: ["血袋", "blood bag", "bolsa de sangre"] },
+{ id: "听诊器", img: "听诊器.png", words: ["听诊器", "stethoscope", "estetoscopio"] },
+{ id: "体温计", img: "体温计.png", words: ["体温计", "thermometer", "termómetro"] },
+{ id: "注射器", img: "注射器.png", words: ["注射器", "syringe", "jeringa"] },
+{ id: "花生", img: "花生.png", words: ["花生", "peanut", "maní"] },
+{ id: "大枣", img: "大枣.png", words: ["大枣", "jujube", "azufaifa"] },
+{ id: "杏仁", img: "杏仁.png", words: ["杏仁", "almond", "almendra"] },
+{ id: "腰果", img: "腰果.png", words: ["腰果", "cashew", "anacardo"] },
+{ id: "葡萄干", img: "葡萄干.png", words: ["葡萄干", "raisin", "pasa"] },
+{ id: "冰淇淋", img: "冰淇淋.png", words: ["冰淇淋", "ice cream", "helado"] },
+{ id: "冰", img: "冰.png", words: ["冰", "ice", "hielo"] },
+{ id: "冰棍", img: "冰棍.png", words: ["冰棍", "popsicle", "paleta"] },
+{ id: "冰山", img: "冰山.png", words: ["冰山", "iceberg", "iceberg"] },
+{ id: "雪人", img: "雪人.png", words: ["雪人", "snowman", "muñeco de nieve"] },
+{ id: "雨衣", img: "雨衣.png", words: ["雨衣", "raincoat", "impermeable"] },
+{ id: "雨伞", img: "雨伞.png", words: ["雨伞", "umbrella", "paraguas"] },
+{ id: "感冒", img: "感冒.png", words: ["感冒", "cold", "resfriado"] },
+{ id: "发烧", img: "发烧.png", words: ["发烧", "fever", "fiebre"] },
+{ id: "早上", img: "早上.png", words: ["早上", "morning", "mañana"] },
+{ id: "晚上", img: "晚上.png", words: ["晚上", "evening", "noche"] },
+{ id: "凌晨", img: "凌晨.png", words: ["凌晨", "dawn", "madrugada"] },
+{ id: "面包机", img: "面包机.png", words: ["面包机", "bread maker", "panificadora"] },
+{ id: "油烟机", img: "油烟机.png", words: ["油烟机", "range hood", "campana extractora"] },
+{ id: "燃气灶", img: "燃气灶.png", words: ["燃气灶", "gas stove", "estufa de gas"] },
+{ id: "砂锅", img: "砂锅.png", words: ["砂锅", "clay pot", "olla de barro"] },
+{ id: "洗碗机", img: "洗碗机.png", words: ["洗碗机", "dishwasher", "lavavajillas"] },
+{ id: "榨汁机", img: "榨汁机.png", words: ["榨汁机", "juicer", "exprimidor"] },
+{ id: "盘子", img: "盘子.png", words: ["盘子", "plate", "plato"] },
+{ id: "碟子", img: "碟子.png", words: ["碟子", "dish", "platillo"] },
+{ id: "茶壶", img: "茶壶.png", words: ["茶壶", "teapot", "tetera"] },
+{ id: "刷子", img: "刷子.png", words: ["刷子", "brush", "cepillo"] },
+{ id: "充电桩", img: "充电桩.png", words: ["充电桩", "charging station", "estación de carga"] },
+{ id: "火炮", img: "火炮.png", words: ["火炮", "artillery", "artillería"] },
+{ id: "坦克", img: "坦克.png", words: ["坦克", "tank", "tanque"] },
+{ id: "军舰", img: "军舰.png", words: ["军舰", "warship", "buque de guerra"] },
+{ id: "战斗机", img: "战斗机.png", words: ["战斗机", "fighter jet", "caza"] },
+{ id: "直升机", img: "直升机.png", words: ["直升机", "helicopter", "helicóptero"] },
+{ id: "火箭", img: "火箭.png", words: ["火箭", "rocket", "cohete"] },
+{ id: "雷达", img: "雷达.png", words: ["雷达", "radar", "radar"] },
+{ id: "原子弹", img: "原子弹.png", words: ["原子弹", "atomic bomb", "bomba atómica"] },
+{ id: "显卡", img: "显卡.png", words: ["显卡", "graphics card", "tarjeta gráfica"] },
+{ id: "内存", img: "内存.png", words: ["内存", "memory", "memoria RAM"] },
+{ id: "显示器", img: "显示器.png", words: ["显示器", "monitor", "monitor"] },
+{ id: "台式电脑", img: "台式电脑.png", words: ["台式电脑", "desktop computer", "computadora de escritorio"] },
+{ id: "笔记本电脑", img: "笔记本电脑.png", words: ["笔记本电脑", "laptop", "portátil"] },
+{ id: "硬盘", img: "硬盘.png", words: ["硬盘", "hard drive", "disco duro"] },
+{ id: "U盘", img: "U盘.png", words: ["U盘", "USB drive", "memoria USB"] },
+{ id: "键盘", img: "键盘.png", words: ["键盘", "keyboard", "teclado"] },
+{ id: "鼠标", img: "鼠标.png", words: ["鼠标", "mouse", "ratón"] },
+{ id: "战争", img: "战争.png", words: ["战争","战事","war","guerra"] },
+
+
+
+
+
+/* ========= 情绪（重点区） ========= */
+{ id: "happy", emoji: "😄", words: ["开心","快乐","高兴","feliz","happy"] },
+{ id: "sad", emoji: "😢", words: ["悲伤","难过","triste","sad"] },
+{ id: "lonely", emoji: "😔", words: ["孤独","寂寞","solo","lonely"] },
+{ id: "angry", emoji: "😡", words: ["愤怒","生气","enojado","angry"] },
+{ id: "tired", emoji: "😩", words: ["疲惫","累","cansado","tired"] },
+{ id: "fear", emoji: "😨", words: ["害怕","恐惧","miedo","fear"] },
+{ id: "calm", emoji: "😌", words: ["平静","安静","calma","calm"] },
+{ id: "confused", emoji: "😵‍💫", words: ["困惑","迷茫","confuso","confused"] },
+
+
+/* ========= 情感 / 关系 ========= */
+{ id: "love", emoji: "❤️", words: ["爱","喜欢","amor","amar","love","like"] },
+{ id: "miss", emoji: "🕯️", words: ["怀念","想念","extrañar","añorar","miss","long for"] },
+{ id: "hope", emoji: "✨", words: ["希望","期待","esperanza","esperar","hope","expect"] },
+{ id: "despair", emoji: "💔", words: ["失望","绝望","desesperación","desesperar","despair"] },
+{ id: "trust", emoji: "🤍", words: ["信任","相信","confiar","confianza","trust","believe"] },
+{ id: "betray", emoji: "🗡️", words: ["背叛","traicionar","betray"] },
+{ id: "accompany", emoji: "🫂", words: ["陪伴","acompañar","acompañamiento","accompany"] },
+{ id: "separate", emoji: "👋", words: ["分离","告别","separar","despedirse","separate","farewell"] },
+{ id: "think", emoji: "🤔", words: ["想","思考","pensar","reflexionar","think"] },
+
+/* ========= 时间 ========= */
+{ id: "time", emoji: "⏰", words: ["时间","tiempo","time"] },
+{ id: "昨天", emoji: "⏮☀️", words: ["昨天","yesterday","ayer"] },
+{ id: "今天", emoji: "⏺☀️", words: ["今天","today","hoy"] },
+{ id: "明天", emoji: "⏭☀️", words: ["明天","tomorrow","mañana"] },
+{ id: "昨晚", emoji: "⏮🌙", words: ["昨晚","昨天晚上","last night","anoche"] },
+{ id: "今晚", emoji: "⏺🌙", words: ["今晚","今天晚上","tonight","esta noche"] },
+{ id: "明晚", emoji: "⏭🌙", words: ["明晚","明天晚上","tomorrow night","mañana por la noche"] },
+{ id: "wait", emoji: "⏳", words: ["等待","esperar","wait"] },
+{ id: "过去", emoji: "⏮", words: ["以前","曾经","过去","从前","past","before","previously","antes","pasado"] },
+{ id: "现在", emoji: "⏺", words: ["现在","当下","此刻","目前","now","currently","present","ahora","actualmente"] },
+{ id: "以后", emoji: "⏭", words: ["以后","将来","未来","之后","future","later","afterwards","después","futuro"] },
+
+
+/* ========= 自然 / 天气 ========= */
+{ id: "rain", emoji: "🌧️", words: ["雨","雨天","lluvia","rain"] },
+{ id: "snow", emoji: "❄️", words: ["雪","下雪","nieve","snow"] },
+{ id: "wind", emoji: "🌬️", words: ["风","viento","wind"] },
+{ id: "sun", emoji: "☀️", words: ["太阳","阳光","sol","sun"] },
+{ id: "moon", emoji: "🌙", words: ["月亮","夜","luna","moon","night"] },
+{ id: "star", emoji: "⭐", words: ["星星","estrella","star"] },
+{ id: "fire", emoji: "🔥", words: ["火","fuego","fire"] },
+{ id: "water", emoji: "💧", words: ["水","agua","water"] },
+{ id: "mountain", emoji: "⛰️", words: ["山","montaña","mountain"] },
+{ id: "sea", emoji: "🌊", words: ["海","mar","sea"] },
+
+/* ========= 抽象 / 存在 ========= */
+{ id: "life", emoji: "🌱", words: ["生命","生活","vida","life"] },
+{ id: "death", emoji: "⚰️", words: ["死亡","muerte","death"] },
+{ id: "silence", emoji: "🤐", words: ["沉默","silencio","silence"] },
+{ id: "voice", emoji: "🗣️", words: ["声音","voz","voice"] },
+{ id: "truth", emoji: "🪞", words: ["真实","verdad","truth"] },
+{ id: "lie", emoji: "🎭", words: ["谎言","mentira","lie"] },
+{ id: "freedom", emoji: "🕊️", words: ["自由","鸟","飞翔","libertad","volar","freedom","fly"] },
+{ id: "chain", emoji: "⛓️", words: ["束缚","锁链","cadena","atadura","chain","bond"] },
+{ id: "sound", emoji: "🔊", words: ["声音","喇叭","sonido","sound"] },
+{ id: "施工", emoji: "🚧", words: ["施工","在建","construction","under construction","obra","en construcción"] },
+{ id: "平等", img: "平等.png", words: ["平等","相等","equal","equality","igual","igualdad"] },
+{ id: "不平等", img: "不平等.png", words: ["不平等","不等","unequal","inequality","desigual","desigualdad"] },
+
+
+
+/* ========= 诗性高频意象 ========= */
+{ id: "night_scene", emoji: "🌌", words: ["夜色","noche","银河","vía láctea","night"] },
+{ id: "shadow", emoji: "👤🌑", words: ["影子","sombra","shadow"] },
+{ id: "light", emoji: "🕯️", words: ["灯光","luz","light"] },
+{ id: "dust", emoji: "🌫️", words: ["灰尘","polvo","dust"] },
+{ id: "distance", emoji: "🌄", words: ["远方","distancia","lejanía","distance"] },
+{ id: "echo", emoji: "🔊🌫️", words: ["回声","eco","echo"] },
+];
+
+
+
+/* =========================
+   ② 渲染
+   ========================= */
+function render(item){
+  if(item.emoji) return item.emoji;
+  if(item.symbol) return item.symbol;
+  if(item.img) return `<img src="${item.img}" class="icon">`;
+  return "";
+}
+
+/* =========================
+   ③ 相似度
+   ========================= */
+function levenshtein(a, b) {
+  const dp = Array.from({length: a.length + 1}, () => []);
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function similarity(a, b) {
+  // 对一词变形更友好的归一化
+  const d = levenshtein(a, b);
+  const base = Math.min(a.length, b.length);
+  return 1 - d / (base + 1);
+}
+
+/* =========================
+   ④ normalize & 判断
+   ========================= */
+function normalize(str){
+  return str
+    .toLowerCase()
+    // ✅ 不再去重音：él ≠ el
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isLatin(ch){
+  return /[a-záéíóúüñ]/i.test(ch);
+}
+
+function isLatinOrSpace(ch){
+  return /[a-záéíóúüñ\s]/i.test(ch);
+}
+
+
+/* =========================
+   ⑤ 构建索引
+   ========================= */
+const exactMap = new Map();
+const allWords = [];
+
+lexicon.forEach(item=>{
+  item.words.forEach(w=>{
+    const nw = normalize(w);
+    exactMap.set(nw, item);
+    allWords.push({ word: nw, item });
+  });
+});
+
+/* =========================
+   ⑥ 主逻辑
+   ========================= */
+function processText(text){
+  let result = "";
+  let i = 0;
+
+  while(i < text.length){
+
+    /* ===== 拉丁文本 ===== */
+    if(isLatin(text[i])){
+      let j = i;
+      while(j < text.length && isLatinOrSpace(text[j])) j++;
+
+      const raw = text.slice(i, j);
+      const parts = normalize(raw).split(" ");
+      let k = 0;
+
+      while(k < parts.length){
+        let matched = false;
+
+        /* ① exact：3 → 2 → 1 */
+        for(let len = 3; len >= 1; len--){
+          if(k + len > parts.length) continue;
+          const chunk = parts.slice(k, k+len).join(" ");
+          if(exactMap.has(chunk)){
+            const item = exactMap.get(chunk);
+            result += render(item);   // ✅ 必须输出
+            k += len;
+            matched = true;
+            break;
+          }
+        }
+        if(matched) continue;
+
+        /* 🚫 特判：el 不参与 fuzzy */
+        if(parts[k] === "el"){
+          result += " o ";
+          k++;
+          continue;
+        }
+
+        /* ② fuzzy：3 → 2 */
+        for(let len = 3; len >= 1; len--){
+          if(k + len > parts.length) continue;
+          const chunk = parts.slice(k, k+len).join(" ");
+
+          let best = null, score = 0;
+          allWords.forEach(({word,item})=>{
+            const s = similarity(chunk, word);
+            if(s > score){
+              score = s;
+              best = item;
+            }
+          });
+
+          if(score >= 0.7){
+            result += render(best);
+            k += len;
+            matched = true;
+            break;
+          }
+        }
+        if(matched) continue;
+
+        /* ③ 兜底 */
+        result += parts[k] + " ";
+        k++;
+      }
+
+      i = j;
+      continue;
+    }
+
+    /* ===== 中文 ===== */
+    let hit = false;
+    for(let len = 4; len >= 2; len--){
+      const slice = normalize(text.slice(i, i+len));
+      if(exactMap.has(slice)){
+        result += render(exactMap.get(slice));
+        i += len;
+        hit = true;
+        break;
+      }
+    }
+    if(hit) continue;
+
+    const one = normalize(text[i]);
+    if(exactMap.has(one)){
+      result += render(exactMap.get(one));
+      i++;
+      continue;
+    }
+
+    result += text[i];
+    i++;
+  }
+
+  return result.trim();
+}
+
+
+/* =========================
+   ⑦ 绑定
+   ========================= */
+const input = document.getElementById("input");
+const output = document.getElementById("output");
+
+input.addEventListener("input", ()=>{
+  output.innerHTML = processText(input.value);
+});
+</script>
