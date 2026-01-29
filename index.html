@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8" />
-<title>表情输入法 · 稳定版</title>
+<title>输入法 · 稳定版</title>
 
 <style>
 body {
@@ -30,7 +30,7 @@ textarea {
 
 <body>
 
-<h2>输入语言 · 输出表情包（符号或图片）</h2>
+<h2>输入语言</h2>
 
 <textarea id="input" placeholder="狗回家 the dog returns home"></textarea>
 <div class="output" id="output"></div>
@@ -43,10 +43,10 @@ const lexicon = [
 {
     id: "person",
     img: "我.png",
-    words: ["我", "自己", "本人"]
+    words: ["我", "自己","i", "yo","me","本人"]
   },
 /* ========= 语法 ========= */
-{ id: "远", img: "images/远.png", words: ["远","远处","远方","lejos","distancia","far","far away"] },
+{ id: "远", img: "远.png", words: ["远","远处","远方","lejos","distancia","far","far away"] },
 { id: "对", emoji: "√", words: ["对","正确","sí","correcto","right","correct"] },
 { id: "不是", emoji: "≠", words: ["不是","no","no es","not"] },
 { id: "错", emoji: "✗", words: ["不是","错","错误","否","不","error","incorrecto","mal","wrong","incorrect","no"] },
@@ -58,6 +58,8 @@ const lexicon = [
 { id: "上升", emoji: "📈", words: ["上升","上涨","增长","提高","增加","变好","回升","subir","aumentar","crecer","rise","increase","go up"] },
 { id: "增加", emoji: "➕", words: ["增加","加","新增","变多","añadir","aumentar","sumar","add","increase","more"] }, 
 { id: "减少", emoji: "➖", words: ["减少","减","变少","reducir","disminuir","menos","reduce","decrease","less"] },
+{ id: "变大", img: "变大.png", words: ["变大","放大","扩大","增大","enlarge","expand","magnify","increase","agrandar","ampliar"] },
+{ id: "变小", img: "变大.png", words: ["变小","缩小","shrink","reduce","minimize","encoger","reducir"] },
 { id: "播放", emoji: "▶️", words: ["播放","开始","运行","启动","reproducir","iniciar","empezar","play","start","run"] },
 { id: "暂停", emoji: "⏸️", words: ["暂停","停一下","暂停一下","暂时停止","pausar","detener","pause","stop","hold"] },
 { id: "小", img: "一点.png", words: ["小","少","pequeño","poco","small","little"] },
@@ -66,7 +68,9 @@ const lexicon = [
 { id: "慢", emoji: "🐢", words: ["慢","很慢","lento","despacio","slow"] },
 { id: "the", empty: true, words: ["the"] },
 { id: "问句", emoji: "？", words: ["吗"] },
-{ id: "el",emoji: "", words: ["el","an","a","el","the","un"] },
+{ id: "Part of redution",emoji: "", words: ["el","an","的","la","a","el","the","at","of","its","through","un"] },
+{ id: "’s", emoji: "’", words: ["’s"] },
+{ id: "or", emoji: "/", words: ["or","或","或者",] },
 
 
 
@@ -82,6 +86,9 @@ const lexicon = [
 { id: "imitate", emoji: "≈", words: ["像","模仿","仿佛","约等于","imitar","parece","imitar a","imitate","copy"] },
 { id: "小于", symbol: "<", words: ["小于", "少于", "less than", "menor que", "<"] },
 { id: "大于", symbol: ">", words: ["大于", "大于于", "greater than", "more than", "mayor que", "más que", ">"] },
+{ id: "most", img: "大部分.png", words: ["大部分","大多数","主要部分","绝大部分","most","mostly","the majority of","la mayor parte","en su mayoría"] },
+{ id: "essence", emoji: "🎯", words: ["本质上","实质上","归根结底","说到底","in essence","essentially","at heart","en esencia","en lo esencial"] },
+
 
 
 /* ========= 新知 ========= */
@@ -111,6 +118,12 @@ const lexicon = [
 { id: "底物", img: "substrate.png", words: ["底物","substrate","sustrato"] },
 { id: "氨基", img: "氨基.png", words: ["氨基","amino","amino group","-nh2"] },
 { id: "质子化氨基", img: "nh3+.png", words: ["nh3+","NH3+","质子化氨基","protonated amino"] },
+{ id: "世界", img: "世界.png", words: ["世界","world","mundial","mundo"] },
+{ id: "干的", emoji: "🏜️", words: ["干的","干旱的","沙漠","dry","seco","desierto","dessert"] },
+{ id: "体重秤", img: "体重秤.png", words: ["mass","重量","体重秤","báscula","body scale","peso"] },
+{ id: "思考", emoji: "🤔", words: ["思考","思","考虑","思索","反思","分析","think","thinking","reflect","analyze","pensar","analizar"] }, 
+{ id: "biochemical", img: "生物化学.png", words: ["生物化学","生化","biochemical","biochemistry","bioquímico","bioquímica"] },
+{ id: "electric", img: "电.png", words: ["电","电的","电性","电流","电信号","电活动","electric","electrical","electricity","corriente eléctrica","eléctrico"], },
 
 
 
@@ -179,6 +192,8 @@ const lexicon = [
 { id: "traffic_railroad", emoji: "🚂", words: ["铁路", "railroad", "火车道", "ferrocarril", "vía férrea"] },
 { id: "traffic_construction", emoji: "🚧", words: ["施工", "construction", "道路施工", "construcción", "obras viales"] },
 { id: "traffic_police", emoji: "👮", words: ["警察", "police", "交警", "policía", "tránsito"] },
+{ id: "减速带", img: "减速带.png", words: ["减速带","前方减速","减速","慢点儿","speed bump","slow down","slow down ahead","lomo de toro","reductor de velocidad","reduzca la velocidad","reduzca la velocidad más adelante"] },
+
 
 
 /* ========= 动物及引申 ========= */
@@ -210,6 +225,7 @@ const lexicon = [
 
 /* ========= 人与身份 ========= */
 
+{ id: "persona", img: "persona.png", words: ["人","人们","我们","we","persona","people","person","gente"] },
 { id: "you", img: "你.png", words: ["你","你们","tu","usted","ustedes","you"] },
 { id: "him", img: "他.png", words: ["他","他们","él","ellos","him","he","them"] },
 { id: "man", emoji: "👨", words: ["男","男人","hombre","man"] },
@@ -258,7 +274,7 @@ const lexicon = [
 { id: "enter", emoji: "🚪➡️", words: ["进入","entrar","enter"] },
 { id: "sit", emoji: "🪑", words: ["坐下","sentarse","sit"] },
 { id: "stand", emoji: "🧍", words: ["站立","estar de pie","stand"] },
-{ id: "look", emoji: "👀", words: ["看","望","mirar","ver","look","see"] },
+{ id: "look", emoji: "👀", words: ["看","望","观察","observing","observe","observar","observation","mirar","ver","look","see"] },
 { id: "listen", emoji: "👂", words: ["听","escuchar","oír","listen"] },
 { id: "cycle", emoji: "🔁", words: ["循环","回路","往复","cycle","loop","ciclo"] },
 { id: "separate", emoji: "✂️", words: ["剪刀","分离","剪开","断裂","separate","split","tijera","cut","separar"] },
@@ -286,10 +302,15 @@ const lexicon = [
 { id: "左转", img: "左转.png", words: ["左转", "left turn", "a la izquierda"] },
 { id: "右转", img: "右转.png", words: ["右转", "right turn", "a la derecha"] },
 { id: "说", emoji: "：", words: ["说","讲","talk","say","decir","hablar",] },
+{ id: "compose", img: "组成.png", words: ["组成","构成","由…组成","构成了","组合","拼合","构成部分","constitute","compose","be composed of","make up","form","componer","constituir","estar compuesto de"] },
+{ id: "activity", img: "活动.png", words: ["活动","活动的","活动性","进行","运作","运行","动作","行为","activity","active","action","operation","process","act","actividad","activo","acción","operación"] },
 
 
 /* ========= 名词 ========= */
 
+{ id: "lightning", emoji: "⚡", words: ["闪电","雷电","霹雳","雷闪","lightning","thunderbolt","rayo","relámpago"] },
+{ id: "显微镜", img: "显微镜.png", words: ["显微镜","microscope","microscopio"] },
+{ id: "明", img: "明.png", words: ["明","亮","明亮","光明", "bright", "brillante"] },
 { id: "邮箱", img: "邮箱.png", words: ["邮箱", "email", "correo"] },
 { id: "密码", img: "密码.png", words: ["密码", "password", "contraseña"] },
 { id: "电线", img: "电线.png", words: ["电线", "wire", "cable"] },
@@ -463,7 +484,7 @@ const lexicon = [
 { id: "U盘", img: "U盘.png", words: ["U盘", "USB drive", "memoria USB"] },
 { id: "键盘", img: "键盘.png", words: ["键盘", "keyboard", "teclado"] },
 { id: "鼠标", img: "鼠标.png", words: ["鼠标", "mouse", "ratón"] },
-{ id: "战争", img: "战争.png", words: ["战争","战事","war","guerra"] },
+{ id: "战争", img: "战争.png", words: ["战争","战事","灾难","desastre","war","disaster","guerra"] },
 
 
 
@@ -492,7 +513,7 @@ const lexicon = [
 { id: "think", emoji: "🤔", words: ["想","思考","pensar","reflexionar","think"] },
 
 /* ========= 时间 ========= */
-{ id: "time", emoji: "⏰", words: ["时间","tiempo","time"] },
+{ id: "time", emoji: "⏰", words: ["时间","tiempo","when","cuando","当","time"] },
 { id: "昨天", emoji: "⏮☀️", words: ["昨天","yesterday","ayer"] },
 { id: "今天", emoji: "⏺☀️", words: ["今天","today","hoy"] },
 { id: "明天", emoji: "⏭☀️", words: ["明天","tomorrow","mañana"] },
